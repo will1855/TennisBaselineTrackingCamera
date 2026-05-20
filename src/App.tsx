@@ -65,7 +65,7 @@ const App: React.FC = () => {
   const colorTracker = useRef<ColorTracker | null>(null);
   const controller = useRef<RailController>(new RailController(DEFAULT_CONFIG));
   const adapter = useRef<MockHardwareAdapter>(new MockHardwareAdapter());
-  const physics = useRef<RailPhysics>(new RailPhysics());
+  const physics = useRef<RailPhysics>(new RailPhysics(0.5, 0.018, 0.1));
   const rafRef = useRef<number>(0);
   const isRunningRef = useRef(false);
   const targetStateRef = useRef<TargetState>(DEFAULT_TARGET_STATE);

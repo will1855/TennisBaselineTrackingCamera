@@ -23,10 +23,10 @@ export interface RailControllerConfig {
 }
 
 export const DEFAULT_CONFIG: RailControllerConfig = {
-  deadZone: 0.05,
-  maxSpeed: 0.8,
-  smoothing: 0.15,
-  accelerationLimit: 0.08,
+  deadZone: 0.03,
+  maxSpeed: 0.9,
+  smoothing: 0.25,
+  accelerationLimit: 0.12,
   confidenceThreshold: 0.3,
 };
 
