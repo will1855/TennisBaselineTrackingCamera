@@ -105,7 +105,7 @@ export class ColorTracker extends Tracker {
     this._frameCtx = canvas.getContext('2d')!;
   }
 
-  protected _computeTarget(): TargetState {
+  protected _computeTarget(_carriagePosition?: number): TargetState {
     if (!this._video || !this._targetHsv) {
       return { x: 0.5, y: 0.5, confidence: 0, detected: false };
     }

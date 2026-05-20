@@ -19,7 +19,7 @@ export interface TargetState {
 export interface ITracker {
   start(): Promise<void>;
   stop(): void;
-  update(): void;
+  update(carriagePosition?: number): void;
   getTargetState(): TargetState;
 }
 

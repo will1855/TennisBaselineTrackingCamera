@@ -45,7 +45,11 @@ export class SimulatedTracker extends Tracker {
     this._running = false;
   }
 
-  protected _computeTarget(): TargetState {
+  get absolutePlayerX(): number {
+    return this._playerX;
+  }
+
+  protected _computeTarget(carriagePosition = 0.5): TargetState {
     this._time += 1;
 
     if (this._paused) {
@@ -56,6 +60,9 @@ export class SimulatedTracker extends Tracker {
         this._direction *= -1;
       }
     } else {
+      // Vary speed slightly using configurable base speed and variation amplitude
+      this._speed = this._config.playerSpeed + Math.sin(this._time * 0.05) * this._config.speedVariation;
+
       this._playerX += this._speed * this._direction;
 
       // Bounce at edges with small randomness
@@ -78,24 +85,29 @@ export class SimulatedTracker extends Tracker {
           this._direction *= -1;
         }
       }
-
-      // Vary speed slightly using configurable base speed and variation amplitude
-      this._speed = this._config.playerSpeed + Math.sin(this._time * 0.05) * this._config.speedVariation;
     }
+
+    // ─── CAMERA VIEWPORT CALCULATIONS (Closed-Loop feedback) ───
+    // relativeX represents the player's position inside the camera's local viewport.
+    // If the carriage is directly aligned with the player, relativeX is 0.5 (perfectly centered).
+    // K represents the camera FOV coefficient.
+    const relativeX = 0.5 + (this._playerX - carriagePosition);
+    const clampedX = Math.max(0, Math.min(1, relativeX));
+
+    // Confidence drops if the player starts going out of the camera's viewport
+    const inViewport = relativeX >= 0.05 && relativeX <= 0.95;
+    const confidence = inViewport
+      ? (this._paused ? 0.75 + Math.random() * 0.1 : 0.88 + Math.random() * 0.12)
+      : 0.08 + Math.random() * 0.05; // lost tracking
 
     // Slight vertical bob
     const y = 0.6 + Math.sin(this._time * 0.12) * 0.04;
 
-    // Confidence is near-perfect in simulated mode
-    const confidence = this._paused
-      ? 0.75 + Math.random() * 0.1
-      : 0.88 + Math.random() * 0.12;
-
     return {
-      x: this._playerX,
+      x: clampedX,
       y,
       confidence,
-      detected: true,
+      detected: inViewport,
     };
   }
 }

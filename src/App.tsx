@@ -47,6 +47,7 @@ const App: React.FC = () => {
   });
   const [carriagePosition, setCarriagePosition] = useState(0.5);
   const [velocity, setVelocity] = useState(0);
+  const [simulatedPlayerX, setSimulatedPlayerX] = useState(0.5);
 
   // ─── Config ────────────────────────────────────────────────────────────────
   const [config, setConfig] = useState<RailControllerConfig>({ ...DEFAULT_CONFIG });
@@ -106,10 +107,14 @@ const App: React.FC = () => {
       if (mode === 'simulated' && simTracker.current) {
         simTracker.current.updateConfig(simulatorConfigRef.current);
       }
-      tracker.update();
+      tracker.update(physics.current.position);
       const ts = tracker.getTargetState();
       targetStateRef.current = ts;
       setTargetState(ts);
+
+      if (mode === 'simulated' && simTracker.current) {
+        setSimulatedPlayerX(simTracker.current.absolutePlayerX);
+      }
     }
 
     // 2. Compute command
@@ -144,6 +149,7 @@ const App: React.FC = () => {
       controller.current.reset();
       setCommand({ direction: 'STOP', speed: 0, reason: 'stopped' });
       setTargetState(DEFAULT_TARGET_STATE);
+      setSimulatedPlayerX(0.5);
     } else {
       // Start
       controller.current = new RailController(config);
@@ -151,6 +157,7 @@ const App: React.FC = () => {
       if (mode === 'simulated') {
         simTracker.current = new SimulatedTracker(simulatorConfigRef.current);
         await simTracker.current.start();
+        setSimulatedPlayerX(simTracker.current.absolutePlayerX);
       } else {
         colorTracker.current = new ColorTracker();
         try {
@@ -262,7 +269,11 @@ const App: React.FC = () => {
                 targetState={targetState}
               />
             ) : (
-              <CourtView targetState={targetState} isRunning={isRunning} />
+              <CourtView
+                targetState={targetState}
+                isRunning={isRunning}
+                absolutePlayerX={mode === 'simulated' ? simulatedPlayerX : targetState.x}
+              />
             )}
           </div>
 
@@ -270,7 +281,7 @@ const App: React.FC = () => {
           <div className="section-card">
             <RailSimulator
               carriagePosition={carriagePosition}
-              targetX={targetState.x}
+              targetX={mode === 'simulated' ? simulatedPlayerX : targetState.x}
               command={command}
               velocity={velocity}
             />
@@ -318,13 +329,17 @@ const App: React.FC = () => {
 interface CourtViewProps {
   targetState: TargetState;
   isRunning: boolean;
+  absolutePlayerX: number;
 }
 
-const CourtView: React.FC<CourtViewProps> = ({ targetState, isRunning }) => {
+const CourtView: React.FC<CourtViewProps> = ({ targetState, isRunning, absolutePlayerX }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number>(0);
   const stateRef = useRef(targetState);
   stateRef.current = targetState;
+
+  const absolutePlayerXRef = useRef(absolutePlayerX);
+  absolutePlayerXRef.current = absolutePlayerX;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -405,7 +420,7 @@ const CourtView: React.FC<CourtViewProps> = ({ targetState, isRunning }) => {
 
       // Player
       const ts = stateRef.current;
-      const px = W * 0.08 + ts.x * (W * 0.84);
+      const px = W * 0.08 + absolutePlayerXRef.current * (W * 0.84);
       const py = H * 0.82;
 
       if (isRunning) {

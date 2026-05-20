@@ -11,11 +11,11 @@ export abstract class Tracker implements ITracker {
 
   abstract start(): Promise<void>;
   abstract stop(): void;
-  protected abstract _computeTarget(): TargetState;
+  protected abstract _computeTarget(carriagePosition?: number): TargetState;
 
-  update(): void {
+  update(carriagePosition?: number): void {
     if (!this._running) return;
-    this._state = this._computeTarget();
+    this._state = this._computeTarget(carriagePosition);
   }
 
   getTargetState(): TargetState {
