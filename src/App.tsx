@@ -281,7 +281,7 @@ const App: React.FC = () => {
           <div className="section-card">
             <RailSimulator
               carriagePosition={carriagePosition}
-              targetX={mode === 'simulated' ? simulatedPlayerX : targetState.x}
+              targetX={mode === 'simulated' ? simulatedPlayerX : carriagePosition + (targetState.x - 0.5)}
               command={command}
               velocity={velocity}
             />
