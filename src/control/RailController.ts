@@ -26,6 +26,7 @@ export class RailController {
   private _config: RailControllerConfig;
   private _smoothedError = 0;
   private _currentSpeed = 0;
+  private _integralError = 0;
   private _manualOverride: ManualOverride = null;
   private _emergencyStop = false;
   private _lastCommand: RailCommand = { direction: 'STOP', speed: 0, reason: 'init' };
@@ -55,6 +56,7 @@ export class RailController {
     if (active) {
       this._currentSpeed = 0;
       this._smoothedError = 0;
+      this._integralError = 0;
     }
   }
 
@@ -83,6 +85,7 @@ export class RailController {
     if (!target.detected || target.confidence < this._config.confidenceThreshold) {
       this._currentSpeed = 0;
       this._smoothedError = 0;
+      this._integralError = 0;
       this._lastCommand = { direction: 'STOP', speed: 0, reason: 'LOST_TRACKING' };
       return this._lastCommand;
     }
@@ -98,23 +101,35 @@ export class RailController {
 
     // Dead zone
     if (absError < this._config.deadZone) {
+      this._integralError = 0; // Clear integral to prevent windup when centered
       this._currentSpeed = this._applyAcceleration(this._currentSpeed, 0);
       this._lastCommand = { direction: 'STOP', speed: 0, reason: 'DEAD_ZONE' };
       return this._lastCommand;
     }
 
-    // Proportional speed: linearly scale error→dead zone to 0→maxSpeed
-    const errorBeyondDeadZone = (absError - this._config.deadZone) / (0.5 - this._config.deadZone);
-    const targetSpeed = Math.min(errorBeyondDeadZone * this._config.maxSpeed, this._config.maxSpeed);
+    // Accumulate integral error
+    this._integralError += this._smoothedError;
+    // Anti-windup
+    const maxI = 20;
+    this._integralError = Math.max(-maxI, Math.min(this._integralError, maxI));
+
+    // PI control signal
+    const pTerm = this._smoothedError * this._config.proportionalGain;
+    const iTerm = this._integralError * this._config.integralGain;
+    const controlSignal = pTerm + iTerm;
+    const absSignal = Math.abs(controlSignal);
+
+    // Target speed mapping
+    const targetSpeed = Math.min(absSignal, this._config.maxSpeed);
 
     // Acceleration limiting
     this._currentSpeed = this._applyAcceleration(this._currentSpeed, targetSpeed);
 
-    const direction = this._smoothedError < 0 ? 'LEFT' : 'RIGHT';
+    const direction = controlSignal < 0 ? 'LEFT' : 'RIGHT';
     this._lastCommand = {
       direction,
       speed: this._currentSpeed,
-      reason: `error=${this._smoothedError.toFixed(3)}`,
+      reason: `PI=${controlSignal.toFixed(3)}`,
     };
     return this._lastCommand;
   }
@@ -139,6 +154,7 @@ export class RailController {
 
   reset(): void {
     this._smoothedError = 0;
+    this._integralError = 0;
     this._currentSpeed = 0;
     this._lastCommand = { direction: 'STOP', speed: 0, reason: 'reset' };
   }

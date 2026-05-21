@@ -121,6 +121,26 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
           onChange={v => onConfigChange({ deadZone: v })}
         />
         <SliderRow
+          id="slider-pgain"
+          label="Proportional Gain"
+          value={config.proportionalGain}
+          min={0.5}
+          max={10}
+          step={0.5}
+          format={v => v.toFixed(1)}
+          onChange={v => onConfigChange({ proportionalGain: v })}
+        />
+        <SliderRow
+          id="slider-igain"
+          label="Integral Gain"
+          value={config.integralGain}
+          min={0}
+          max={0.5}
+          step={0.01}
+          format={v => v.toFixed(2)}
+          onChange={v => onConfigChange({ integralGain: v })}
+        />
+        <SliderRow
           id="slider-smoothing"
           label="Smoothing (EMA α)"
           value={config.smoothing}

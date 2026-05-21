@@ -16,6 +16,8 @@ export interface RailCommand {
 
 export interface RailControllerConfig {
   deadZone: number;         // fraction of frame width, e.g. 0.05
+  proportionalGain: number; // how aggressively it reacts to error
+  integralGain: number;     // how aggressively it corrects steady-state error
   maxSpeed: number;         // 0 to 1
   smoothing: number;        // 0 to 1 (EMA alpha — higher = more responsive)
   accelerationLimit: number; // max speed change per tick (0–1)
@@ -24,6 +26,8 @@ export interface RailControllerConfig {
 
 export const DEFAULT_CONFIG: RailControllerConfig = {
   deadZone: 0.03,
+  proportionalGain: 2.5,
+  integralGain: 0.05,
   maxSpeed: 0.9,
   smoothing: 0.25,
   accelerationLimit: 0.12,
